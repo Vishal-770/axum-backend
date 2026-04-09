@@ -14,6 +14,8 @@ pub fn auth_routes() ->Router{
         .route("/logout",post(logout_handler))
         .route("/sign-up",post(sign_up_handler))
         .route("/forgot-password",post(forgot_password_handler));
-    
+
     return auth_router;
 }
+
+
