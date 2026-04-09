@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CopilotDiffPersistence">
+    <option name="pendingDiffs">
+      <map>
+        <entry key="/app (snapshot).rs">
+          <value>
+            <PendingDiffInfo>
+              <option name="filePath" value="/app (snapshot).rs" />
+              <option name="originalContent" value="use axum::{routing::get, Router};&#10;pub mod handlers;&#10;&#10;&#10;pub fn appRouter() -&gt; Router {&#10;    let app = Router::new().route(&quot;/&quot;, get(rootHandler));&#10;    app&#10;}&#10;&#10;" />
+              <option name="updatedContent" value="use axum::{routing::get, Router};&#10;use crate::handlers::rootHandler::rootHandler;&#10;&#10;pub fn appRouter() -&gt; Router {&#10;    let app = Router::new().route(&quot;/&quot;, get(rootHandler));&#10;    app&#10;}&#10;&#10;" />
+            </PendingDiffInfo>
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
