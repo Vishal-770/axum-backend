@@ -12,6 +12,6 @@ pub struct SignUpDto {
 }
 
 #[derive(Deserialize)]
-pub struct LoginDto {
+pub struct LogoutDto {
     pub refresh_token: String,
 }
