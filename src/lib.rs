@@ -11,3 +11,4 @@ pub mod config;
 pub mod errors;
  pub mod dtos;
 
+pub mod database;
