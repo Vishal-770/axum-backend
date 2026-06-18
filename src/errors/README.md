@@ -4,117 +4,127 @@ This directory houses the error handling structure for the Axum backend. The pro
 
 ---
 
-## Architecture Overview
+## The Core Concept: Why Error Wrapping?
 
-```mermaid
-graph TD
-    A[Axum Route/Handler] -->|Expects Result| B[AppError]
-    B -->|AppError::Auth| C[AuthError]
-    B -->|AppError::Database| D[sqlx::Error]
-    B -->|AppError::InternalServer| E[Generic 500 error]
-    
-    C -->|IntoResponse| F[400 Bad Request / 409 Conflict / 401 Unauthorized]
-    B -->|IntoResponse| G[500 Internal Server Error]
+In Rust, a function can only return **one** error type in its `Result<T, E>`. However, a service like `sign_up` can fail in two completely different ways:
+1. **A Database Error** (e.g., query syntax error, connection timeout) $\rightarrow$ Produces `sqlx::Error`.
+2. **An Authentication Error** (e.g., email already registered) $\rightarrow$ Produces `AuthError`.
+
+To allow services to return both types of errors without boilerplate mapping on every line, we use the **Global Error Wrapper Pattern** via `AppError`. It acts as a container ("box") that holds either error.
+
+```
+                  ┌────────────── AppError ──────────────┐
+                  │                                      │
+                  │  Either:                             │
+                  │  ┌──────────────┐  ┌──────────────┐  │
+                  │  │  AuthError   │  │ sqlx::Error  │  │
+                  │  └──────────────┘  └──────────────┘  │
+                  │                                      │
+                  └──────────────────────────────────────┘
 ```
 
 ---
 
-## Error Layer Breakdown
+## Technical Implementation Details
 
-### 1. Global Application Error: `AppError` (`src/errors/mod.rs`)
+The magic of automatic error wrapping is powered by the `thiserror` crate's `#[from]` macro.
 
-`AppError` is the top-level error enum returned by Axum route handlers. It acts as an umbrella that captures and categorizes lower-layer errors.
+### 1. The Global Error Wrapper: `AppError` ([src/errors/mod.rs](file:///home/vishal/Projects/axum-backend/src/errors/mod.rs))
 
 ```rust
+#[derive(Error, Debug)]
 pub enum AppError {
     #[error(transparent)]
-    Auth(#[from] AuthError),           // Delegated authentication errors
+    Auth(#[from] AuthError),
 
     #[error("Database error: {0}")]
-    Database(#[from] sqlx::Error),     // Automatically catches database issues
+    Database(#[from] sqlx::Error),
 
     #[error("Internal server error")]
-    InternalServer,                    // Catch-all system errors
+    InternalServer,
 }
 ```
 
-- **Safety & Security**: Database errors (`sqlx::Error`) are captured using `#[from]`. The `IntoResponse` implementation logs the detailed database error internally on the server but returns a sanitized `500 Internal Server Error` with `{"error": "Internal database error"}` to the client to prevent SQL injection or schema leaks.
-- **Axum Integration**: Implements `IntoResponse` to translate Rust errors directly into HTTP responses.
+Behind the scenes, `thiserror` expands `#[from]` to implement Rust's standard `From` trait. For example, it automatically generates:
+
+```rust
+// Generated automatically by #[from]
+impl From<AuthError> for AppError {
+    fn from(err: AuthError) -> Self {
+        AppError::Auth(err)
+    }
+}
+
+impl From<sqlx::Error> for AppError {
+    fn from(err: sqlx::Error) -> Self {
+        AppError::Database(err)
+    }
+}
+```
+
+Because of these implementations, Rust's `?` operator and `.into()` method know exactly how to convert `AuthError` and `sqlx::Error` into `AppError` automatically.
 
 ---
 
-### 2. Domain Error: `AuthError` (`src/errors/auth_error.rs`)
+### 2. Domain Errors: `AuthError` ([src/errors/auth_error.rs](file:///home/vishal/Projects/axum-backend/src/errors/auth_error.rs))
 
-`AuthError` handles all authentication and authorization specific failures.
+`AuthError` handles all client-facing authentication failures:
 
 ```rust
+#[derive(Error, Debug)]
 pub enum AuthError {
-    Conflict(String),      // 409 Conflict (e.g., "User already exists")
-    Validation(String),    // 400 Bad Request (e.g., input validation failure)
-    Unauthorized,          // 401 Unauthorized (e.g., invalid password, expired token)
-    InternalServer,        // 500 Internal Server Error (e.g., hashing failures)
+    #[error("User already exists: {0}")]
+    Conflict(String),
+
+    #[error("Validation error: {0}")]
+    Validation(String),
+
+    #[error("Unauthorized")]
+    Unauthorized,
+
+    #[error("Internal server error")]
+    InternalServer,
 }
 ```
-
-- **Convenience conversion**: Since `AppError` implements `#[from] AuthError`, returning a local `AuthError` inside handlers will automatically cast to `AppError` using the `?` operator.
 
 ---
 
-## Response Formatting Example
+## How it Works in Practice (Step-by-Step)
 
-When a client makes a request that fails validation or triggers a database conflict, the system returns a unified JSON format:
+### Scenario A: A Database Query Fails
 
-```json
-{
-  "error": "Error message description"
-}
-```
-
-### Mapping Matrix
-
-| Error Variant | HTTP Status Code | Client Payload |
-|---|---|---|
-| `AuthError::Conflict(msg)` | `409 Conflict` | `{"error": "<msg>"}` |
-| `AuthError::Validation(msg)` | `400 Bad Request` | `{"error": "<msg>"}` |
-| `AuthError::Unauthorized` | `401 Unauthorized` | `{"error": "Unauthorized"}` |
-| `AppError::Database` | `500 Internal Server Error` | `{"error": "Internal database error"}` |
-| `AppError::InternalServer` | `500 Internal Server Error` | `{"error": "Internal server error"}` |
+1. **Failure**: Inside the service, `sqlx::query_as!(...).fetch_one(...)` fails (e.g. database went offline). This returns `Result<User, sqlx::Error>`.
+2. **Propagation**: We append the `?` operator:
+   ```rust
+   let user = sqlx::query_as!(...).fetch_one(&mut *tx).await?;
+   ```
+3. **Conversion**: Rust sees that the query returns `sqlx::Error`, but the enclosing function returns `Result<_, AppError>`. Rust automatically calls `AppError::from(sqlx_error)`, wrapping it into `AppError::Database`.
+4. **Handler Bubble-up**: The handler receives `AppError::Database`, maps it with `?` to propagate it out of the route.
+5. **HTTP Response**: Axum calls `IntoResponse` for `AppError`. It logs the detailed database error internally but returns `500 Internal Server Error` with `{"error": "Internal database error"}` to the client (securing database details).
 
 ---
 
-## Practical Usage in Services (e.g., `sign_up_service.rs`)
+### Scenario B: Email is Already Registered
 
-When writing business logic or services, return `Result<T, AppError>`. This allows the service to propagate database, authentication, and system errors seamlessly:
+1. **Failure**: Inside the service, we detect that the user is already verified:
+   ```rust
+   if user.verified {
+       return Err(AuthError::Conflict("User already exists".to_string()).into());
+   }
+   ```
+2. **Conversion**: We instantiate `AuthError::Conflict` and call `.into()`. Since `From<AuthError>` is implemented for `AppError`, this converts it into `AppError::Auth(AuthError::Conflict)`.
+3. **HTTP Response**: The handler propagates it using `?`. Axum calls `IntoResponse` which delegates to `AuthError`'s `IntoResponse`, returning:
+   - **HTTP Status**: `409 Conflict`
+   - **JSON Body**: `{"error": "User already exists"}`
 
-```rust
-pub async fn sign_up(
-    email: String,
-    state: AppState,
-) -> Result<User, AppError> { ... }
-```
+---
 
-Here is how different errors are generated and converted inside a service:
+## Response Mapping Matrix
 
-### 1. Database Errors (Implicit Conversion via `?`)
-SQLx queries and transactions return `Result<T, sqlx::Error>`. The `?` operator automatically wraps this inside `AppError::Database(sqlx::Error)` because of the `#[from] sqlx::Error` attribute:
-```rust
-let existing_user = sqlx::query_as!(...)
-    .fetch_optional(&mut *tx)
-    .await?; // sqlx::Error is converted automatically to AppError
-```
-
-### 2. Domain/Authentication Conflicts (Conversion via `.into()`)
-Business rule violations (like trying to register a verified email) use `AuthError`. They are converted to `AppError::Auth(AuthError)` using the `.into()` method:
-```rust
-if user.verified {
-    return Err(AuthError::Conflict("User already exists".to_string()).into());
-}
-```
-
-### 3. Hashing/Internal Errors (Direct Creation)
-Catch-all system failures (such as `bcrypt` failing to hash a password) map directly to `AppError::InternalServer`:
-```rust
-let hashed_password = hash(password, DEFAULT_COST)
-    .map_err(|_| AppError::InternalServer)?;
-```
-
+| Error Type / Variant | HTTP Status Code | Client Payload | Internals Logged? |
+|---|---|---|---|
+| `AuthError::Conflict(msg)` | `409 Conflict` | `{"error": "<msg>"}` | No |
+| `AuthError::Validation(msg)` | `400 Bad Request` | `{"error": "<msg>"}` | No |
+| `AuthError::Unauthorized` | `401 Unauthorized` | `{"error": "Unauthorized"}` | No |
+| `AppError::Database(sqlx_err)` | `500 Internal Server Error` | `{"error": "Internal database error"}` | **Yes (Detailed logs)** |
+| `AppError::InternalServer` | `500 Internal Server Error` | `{"error": "Internal server error"}` | Yes |
