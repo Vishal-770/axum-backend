@@ -61,7 +61,7 @@ pub async fn sign_up(
 
                 // Generate and update existing OTP
                 let otp = generate_otp().await;
-                let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(15);
+                let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(10);
                 println!(
                     "Updating OTP {} for existing unverified email {} (expires at {})",
                     otp, normalized_email, expires_at
@@ -115,7 +115,7 @@ pub async fn sign_up(
 
             // Generate and insert new OTP
             let otp = generate_otp().await;
-            let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(15);
+            let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(10);
             println!(
                 "Inserting new OTP {} for new email {} (expires at {})",
                 otp, normalized_email, expires_at

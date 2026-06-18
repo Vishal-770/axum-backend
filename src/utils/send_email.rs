@@ -1,7 +1,8 @@
 use crate::config::mail_config::MailService;
 use lettre::{
-    AsyncTransport, Message,
-    message::{Mailbox, header::ContentType},
+    message::{header::ContentType, Mailbox},
+    AsyncTransport,
+    Message,
 };
 
 impl MailService {
@@ -33,19 +34,20 @@ impl MailService {
                     {}
                 </div>
 
-                <p>This OTP expires in 15 minutes.</p>
+                <p>This OTP expires in 10 minutes.</p>
             </body>
             </html>
             "#,
             username, otp
         );
 
-        let sender = std::env::var("gmail_email")
-            .or_else(|_| std::env::var("SMTP_USER"))
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
-
         let email = Message::builder()
-            .from(Mailbox::new(Some("Your App".to_string()), sender.parse()?))
+            .from(
+                Mailbox::new(
+                    Some("Your App".to_string()),
+                    std::env::var("SMTP_USER")?.parse()?,
+                )
+            )
             .to(to.parse()?)
             .subject("Verify Your Email")
             .header(ContentType::TEXT_HTML)
