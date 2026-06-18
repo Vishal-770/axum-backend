@@ -79,3 +79,42 @@ When a client makes a request that fails validation or triggers a database confl
 | `AuthError::Unauthorized` | `401 Unauthorized` | `{"error": "Unauthorized"}` |
 | `AppError::Database` | `500 Internal Server Error` | `{"error": "Internal database error"}` |
 | `AppError::InternalServer` | `500 Internal Server Error` | `{"error": "Internal server error"}` |
+
+---
+
+## Practical Usage in Services (e.g., `sign_up_service.rs`)
+
+When writing business logic or services, return `Result<T, AppError>`. This allows the service to propagate database, authentication, and system errors seamlessly:
+
+```rust
+pub async fn sign_up(
+    email: String,
+    state: AppState,
+) -> Result<User, AppError> { ... }
+```
+
+Here is how different errors are generated and converted inside a service:
+
+### 1. Database Errors (Implicit Conversion via `?`)
+SQLx queries and transactions return `Result<T, sqlx::Error>`. The `?` operator automatically wraps this inside `AppError::Database(sqlx::Error)` because of the `#[from] sqlx::Error` attribute:
+```rust
+let existing_user = sqlx::query_as!(...)
+    .fetch_optional(&mut *tx)
+    .await?; // sqlx::Error is converted automatically to AppError
+```
+
+### 2. Domain/Authentication Conflicts (Conversion via `.into()`)
+Business rule violations (like trying to register a verified email) use `AuthError`. They are converted to `AppError::Auth(AuthError)` using the `.into()` method:
+```rust
+if user.verified {
+    return Err(AuthError::Conflict("User already exists".to_string()).into());
+}
+```
+
+### 3. Hashing/Internal Errors (Direct Creation)
+Catch-all system failures (such as `bcrypt` failing to hash a password) map directly to `AppError::InternalServer`:
+```rust
+let hashed_password = hash(password, DEFAULT_COST)
+    .map_err(|_| AppError::InternalServer)?;
+```
+
