@@ -29,3 +29,5 @@ lettre = { version = "0.11", features = [
     "builder",
     "smtp-transport",
 ] }
+jsonwebtoken = "10"
+sha2 = "0.11.0"

@@ -3,12 +3,13 @@ pub mod handlers;
 
 pub mod routes;
 
-pub mod services;
-pub mod middleware;
-pub mod utils;
 pub mod config;
+pub mod middleware;
+pub mod services;
+pub mod utils;
 
+pub mod dtos;
 pub mod errors;
- pub mod dtos;
 
+pub mod auth;
 pub mod database;

@@ -7,6 +7,7 @@ pub struct LoginDto {
     #[validate(email)]
     pub email: String,
     pub password: String,
+    pub device_name: Option<String>,
 }
 
 #[derive(Deserialize, Validate)]
@@ -39,4 +40,12 @@ pub struct VerifyEmailDto {
     #[validate(length(equal = 6, message = "OTP must be exactly 6 digits"))]
     pub otp: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct AuthResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub user: CreateUserResponse,
+}
+
 
