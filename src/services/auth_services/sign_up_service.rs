@@ -10,20 +10,17 @@ pub async fn sign_up(
     password: String,
     state: AppState,
 ) -> Result<User, AppError> {
-    println!("Sign up request for email: {}", email);
+    let normalized_email = email.trim().to_lowercase();
+    println!("Sign up request for email: {}", normalized_email);
 
-    // 1. Hash the password upfront
-    let hashed_password = hash(password, DEFAULT_COST)
-        .map_err(|_| AppError::InternalServer)?;
-
-    // 2. Start a transaction
+    // 1. Start a transaction
     let mut tx = state.db.begin().await?;
 
-    // 3. Check for existing user
+    // 2. Check for existing user (use explicit column list instead of SELECT *)
     let existing_user = sqlx::query_as!(
         User,
-        "SELECT * FROM users WHERE email = $1",
-        email
+        "SELECT id, email, username, password, verified, created_at, updated_at FROM users WHERE email = $1",
+        normalized_email
     )
     .fetch_optional(&mut *tx)
     .await?;
@@ -35,7 +32,12 @@ pub async fn sign_up(
                 return Err(AuthError::Conflict("User with this email already exists".to_string()).into());
             } else {
                 // User exists but is NOT verified - allow claim (overwrite)
-                println!("Unverified user found for email: {}. Overwriting account.", email);
+                println!("Unverified user found for email: {}. Overwriting account.", normalized_email);
+                
+                // Hash the password only when we know we need to perform write operations
+                let hashed_password = hash(password, DEFAULT_COST)
+                    .map_err(|_| AppError::InternalServer)?;
+
                 sqlx::query_as!(
                     User,
                     r#"
@@ -46,7 +48,7 @@ pub async fn sign_up(
                     "#,
                     user_name,
                     hashed_password,
-                    email
+                    normalized_email
                 )
                 .fetch_one(&mut *tx)
                 .await?
@@ -54,6 +56,10 @@ pub async fn sign_up(
         }
         None => {
             // No existing user - create new one
+            // Hash the password only when we know we need to perform write operations
+            let hashed_password = hash(password, DEFAULT_COST)
+                .map_err(|_| AppError::InternalServer)?;
+
             sqlx::query_as!(
                 User,
                 r#"
@@ -62,7 +68,7 @@ pub async fn sign_up(
                 RETURNING id, email, username, password, verified, created_at, updated_at
                 "#,
                 Uuid::new_v4(),
-                email,
+                normalized_email,
                 user_name,
                 hashed_password
             )

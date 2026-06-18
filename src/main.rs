@@ -8,11 +8,17 @@ async fn main() {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
 
     let pool=connect_db(&db_url).await;
+
+    // Run database migrations on startup
+    sqlx::migrate!("./database/migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run database migrations");
+
     let app=app_router(pool);
     let listener=tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("listening on port 3000");
     axum::serve(listener,app).await.unwrap();
-
 }
 
 
