@@ -149,7 +149,8 @@ pub async fn sign_up(
     tx.commit().await?;
 
     // 4. Send verification email
-    state.mail_service
+    state
+        .mail_service
         .send_otp_email(&normalized_email, &user.username, &otp)
         .await
         .map_err(|e| {
