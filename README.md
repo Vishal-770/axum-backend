@@ -88,6 +88,63 @@ Adminer provides a web interface to inspect and query the database.
 
 ---
 
+## Database Migrations (Modifying Tables from Code)
+
+This project uses SQLx's built-in migration system to manage the database schema directly from the codebase. Migrations are executed automatically when the backend server starts.
+
+### How it Works
+
+1. **Migration Files**: Stored in the [database/migrations](file:///home/vishal/Projects/axum-backend/database/migrations) directory.
+2. **Naming Convention**: File names must be prefixed with a unique timestamp (e.g., `YYYYMMDDHHMMSS_action_name.sql`).
+3. **Execution**: The server executes pending migrations on startup:
+   ```rust
+   sqlx::migrate!("./database/migrations").run(&pool).await;
+   ```
+
+---
+
+### 1. Create a New Table
+
+To create a new table, create a new SQL file in the migrations folder:
+- **Example Filename**: `20260618000000_create_posts.sql`
+- **File Content**:
+  ```sql
+  CREATE TABLE posts (
+      id UUID PRIMARY KEY,
+      title TEXT NOT NULL,
+      body TEXT NOT NULL,
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      created_at TIMESTAMP NOT NULL DEFAULT NOW()
+  );
+  ```
+
+### 2. Edit an Existing Table (Alter Schema)
+
+To edit a table (e.g., add, rename, or drop columns), create a new migration. **Never modify existing migration files** that have already been run.
+- **Example Filename**: `20260618000001_add_bio_to_users.sql`
+- **File Content**:
+  ```sql
+  -- Add a bio column to the users table
+  ALTER TABLE users ADD COLUMN bio TEXT;
+  ```
+
+### 3. Delete a Table
+
+To delete (drop) a table:
+- **Example Filename**: `20260618000002_drop_posts.sql`
+- **File Content**:
+  ```sql
+  DROP TABLE IF EXISTS posts;
+  ```
+
+---
+
+### Key Rules for Migrations
+- **Do not edit already applied migrations**: Once a migration runs in production or locally, editing its file will cause checksum mismatches in SQLx. Always create a *new* migration file for any schema changes.
+- **Run migrations compile check**: Because SQLx checks queries at compile time, you must run your migrations against your database before compiling the Rust project.
+
+---
+
 ## Running the Backend Application
 
 Once the database is running:
