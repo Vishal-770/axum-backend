@@ -1,0 +1,475 @@
+{
+	"info": {
+		"_postman_id": "7d4b4a1b-c12a-4db3-9821-1d0b3017a421",
+		"name": "Auth Signup and Verification Tests",
+		"description": "Collection of requests testing all edge cases for /auth/sign-up and /auth/verify-email endpoints, including validation, conflicts, overwrites, and successful verification.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "1. Signup - Success (New User)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 Created\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Response has user details with verified = false\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"id\");",
+							"    pm.expect(jsonData.email).to.eql(pm.collectionVariables.get(\"test_email\"));",
+							"    pm.expect(jsonData.verified).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"password123\",\n    \"user_name\": \"test_user_new\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Registers a new user for the first time. The email will be marked as unverified, and an OTP will be saved to the database and sent to the email."
+			},
+			"response": []
+		},
+		{
+			"name": "2. Signup - Validation Failure (Invalid Email)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Response contains validation error details\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.include(\"Validation error\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"invalid-email-format\",\n    \"password\": \"password123\",\n    \"user_name\": \"test_user_validation\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Fails validation due to an invalid email format."
+			},
+			"response": []
+		},
+		{
+			"name": "3. Signup - Validation Failure (Short Password)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Response contains password validation message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.include(\"Password must be at least 6 characters long\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"validemail@example.com\",\n    \"password\": \"123\",\n    \"user_name\": \"test_user_pwd\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Fails validation because the password has fewer than 6 characters."
+			},
+			"response": []
+		},
+		{
+			"name": "4. Signup - Validation Failure (Short Username)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Response contains username validation message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.include(\"Username must be at least 3 characters long\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"validemail@example.com\",\n    \"password\": \"password123\",\n    \"user_name\": \"ab\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Fails validation because the username has fewer than 3 characters."
+			},
+			"response": []
+		},
+		{
+			"name": "5. Signup - Overwrite (Unverified User)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 201 Created\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"",
+							"pm.test(\"Successfully overwrites unverified user's credentials\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.username).to.eql(\"test_user_overwritten\");",
+							"    pm.expect(jsonData.verified).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"newpassword789\",\n    \"user_name\": \"test_user_overwritten\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Submits signup with the same unverified email. This triggers the overwrite branch: it updates the user profile and generates/saves a new OTP in-place (without deleting the database row)."
+			},
+			"response": []
+		},
+		{
+			"name": "6. Verify Email - Validation Failure (Wrong OTP Length)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Response contains validation message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.include(\"OTP must be exactly 6 digits\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"otp\": \"1234\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/verify-email",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"verify-email"
+					]
+				},
+				"description": "Fails validation because the OTP does not have exactly 6 characters."
+			},
+			"response": []
+		},
+		{
+			"name": "7. Verify Email - Incorrect OTP",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 400 Bad Request\", function () {",
+							"    pm.response.to.have.status(400);",
+							"});",
+							"",
+							"pm.test(\"Response returns Invalid Code error\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.eql(\"Invalid Code\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"otp\": \"000000\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/verify-email",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"verify-email"
+					]
+				},
+				"description": "Sends a structurally valid but incorrect 6-digit OTP code, expecting an Invalid Code error."
+			},
+			"response": []
+		},
+		{
+			"name": "8. Verify Email - Success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response returns success message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.eql(\"Email verified successfully\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"otp\": \"{{received_otp}}\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/verify-email",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"verify-email"
+					]
+				},
+				"description": "Submits the correct OTP received via email or server console logs (set in the `received_otp` collection/environment variable) to verify the account."
+			},
+			"response": []
+		},
+		{
+			"name": "9. Signup - Conflict (Already Verified)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 409 Conflict\", function () {",
+							"    pm.response.to.have.status(409);",
+							"});",
+							"",
+							"pm.test(\"Response returns Conflict message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.error).to.include(\"User with this email already exists\");",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"password123\",\n    \"user_name\": \"test_user_conflict\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/sign-up",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Tries to sign up with the verified email address. Expected to fail with a 409 Conflict."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "test_email",
+			"value": "verifytest@example.com",
+			"type": "string"
+		},
+		{
+			"key": "received_otp",
+			"value": "123456",
+			"type": "string"
+		}
+	]
+}
