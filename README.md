@@ -101,6 +101,24 @@ This project uses SQLx's built-in migration system to manage the database schema
    sqlx::migrate!("./database/migrations").run(&pool).await;
    ```
 
+### How to Create a New Migration File
+
+You can create a new migration using either of these two methods:
+
+#### Method A: Manually (Simplest & Recommended)
+Create a blank `.sql` file in the [database/migrations](file:///home/vishal/Projects/axum-backend/database/migrations) directory:
+```bash
+touch database/migrations/YYYYMMDDHHMMSS_your_migration_name.sql
+```
+*Note: Use the current date and time for the timestamp prefix (e.g. `20260618143000_create_posts.sql`).*
+
+#### Method B: Using SQLx CLI
+If you have the `sqlx-cli` tool installed, you can generate a timestamped file automatically by running:
+```bash
+sqlx migrate add your_migration_name
+```
+This will automatically generate a blank file like `database/migrations/20260618143412_your_migration_name.sql`.
+
 ---
 
 ### 1. Create a New Table
