@@ -121,14 +121,26 @@ pub async fn sign_up(
                 otp, normalized_email, expires_at
             );
 
-            sqlx::query!(
-                "INSERT INTO email_otp (email, otp, expires_at) VALUES ($1, $2, $3)",
-                normalized_email,
+            let rows_affected = sqlx::query!(
+                "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW() WHERE email = $3",
                 otp,
-                expires_at
+                expires_at,
+                normalized_email
             )
             .execute(&mut *tx)
-            .await?;
+            .await?
+            .rows_affected();
+
+            if rows_affected == 0 {
+                sqlx::query!(
+                    "INSERT INTO email_otp (email, otp, expires_at) VALUES ($1, $2, $3)",
+                    normalized_email,
+                    otp,
+                    expires_at
+                )
+                .execute(&mut *tx)
+                .await?;
+            }
 
             (new_user, otp)
         }

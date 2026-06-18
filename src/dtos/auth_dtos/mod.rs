@@ -31,3 +31,12 @@ pub struct CreateUserResponse {
     pub username: String,
     pub verified: bool,
 }
+
+#[derive(Deserialize, Validate)]
+pub struct VerifyEmailDto {
+    #[validate(email)]
+    pub email: String,
+    #[validate(length(equal = 6, message = "OTP must be exactly 6 digits"))]
+    pub otp: String,
+}
+
