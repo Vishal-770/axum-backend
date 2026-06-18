@@ -86,14 +86,14 @@ cargo install sqlx-cli --no-default-features --features postgres
 
 ## 5. SQLx Migration Commands
 
-Migrations allow you to version control your database schema. They are SQL files located in [database/migrations](file:///home/vishal/Projects/axum-backend/database/migrations).
+Migrations allow you to version control your database schema. They are SQL files located in [migrations](file:///home/vishal/Projects/axum-backend/migrations).
 
 ### Create a New Migration File
 Creates a blank migration file prefixed with a YYYYMMDDHHMMSS timestamp:
 ```bash
 sqlx migrate add <migration_name>
 ```
-*Example:* `sqlx migrate add create_posts` will create `database/migrations/20260618123000_create_posts.sql`.
+*Example:* `sqlx migrate add create_posts` will create `migrations/20260618123000_create_posts.sql`.
 
 ### Run All Pending Migrations
 Applies all pending migrations to the local database configured in `.env` (`DATABASE_URL`):

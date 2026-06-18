@@ -10,7 +10,7 @@ async fn main() {
     let pool=connect_db(&db_url).await;
 
     // Run database migrations on startup
-    sqlx::migrate!("./database/migrations")
+    sqlx::migrate!("./migrations")
         .run(&pool)
         .await
         .expect("Failed to run database migrations");
