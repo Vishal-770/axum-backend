@@ -2,12 +2,12 @@
 	"info": {
 		"_postman_id": "a4b5c6d7-e8f9-4a0b-b1c2-d3e4f5a6b7c8",
 		"name": "Auth API Tests",
-		"description": "Collection for testing authentication routes (Login, Signup, Logout)",
+		"description": "Collection for testing all authentication routes (Login, Signup, Logout, Forgot Password) in the Axum backend.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
 		{
-			"name": "Sign-up",
+			"name": "Sign-up (Create User)",
 			"request": {
 				"method": "POST",
 				"header": [
@@ -29,7 +29,36 @@
 						"auth",
 						"sign-up"
 					]
-				}
+				},
+				"description": "Creates a new user account. Normalizes the email to lowercase. If the email exists and is not verified, it overwrites the account."
+			},
+			"response": []
+		},
+		{
+			"name": "Sign-up (Case-Insensitive Conflict Test)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"USER@EXAMPLE.COM\",\n    \"password\": \"anotherpassword\",\n    \"user_name\": \"testuser_new\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/auth/sign-up",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"sign-up"
+					]
+				},
+				"description": "Tests case-insensitivity. If user@example.com exists and is verified, this will return a 409 Conflict."
 			},
 			"response": []
 		},
@@ -56,7 +85,8 @@
 						"auth",
 						"login"
 					]
-				}
+				},
+				"description": "Log in with email and password."
 			},
 			"response": []
 		},
@@ -70,6 +100,10 @@
 						"value": "application/json"
 					}
 				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"refresh_token\": \"insert-your-refresh-token-here\"\n}"
+				},
 				"url": {
 					"raw": "{{baseUrl}}/auth/logout",
 					"host": [
@@ -79,7 +113,32 @@
 						"auth",
 						"logout"
 					]
-				}
+				},
+				"description": "Log out and invalidate refresh token."
+			},
+			"response": []
+		},
+		{
+			"name": "Forgot Password",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/auth/forgot-password",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"auth",
+						"forgot-password"
+					]
+				},
+				"description": "Request a password reset link."
 			},
 			"response": []
 		}
