@@ -1,8 +1,8 @@
 use crate::database::db_state::AppState;
 use crate::database::models::user_model::User;
 use crate::errors::{AppError, auth_error::AuthError};
+use bcrypt::{DEFAULT_COST, hash};
 use uuid::Uuid;
-use bcrypt::{hash, DEFAULT_COST};
 
 pub async fn sign_up(
     email: String,
@@ -29,14 +29,19 @@ pub async fn sign_up(
         Some(user) => {
             if user.verified {
                 // User is already verified, cannot claim
-                return Err(AuthError::Conflict("User with this email already exists".to_string()).into());
+                return Err(
+                    AuthError::Conflict("User with this email already exists".to_string()).into(),
+                );
             } else {
                 // User exists but is NOT verified - allow claim (overwrite)
-                println!("Unverified user found for email: {}. Overwriting account.", normalized_email);
-                
+                println!(
+                    "Unverified user found for email: {}. Overwriting account.",
+                    normalized_email
+                );
+
                 // Hash the password only when we know we need to perform write operations
-                let hashed_password = hash(password, DEFAULT_COST)
-                    .map_err(|_| AppError::InternalServer)?;
+                let hashed_password =
+                    hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
 
                 sqlx::query_as!(
                     User,
@@ -57,8 +62,8 @@ pub async fn sign_up(
         None => {
             // No existing user - create new one
             // Hash the password only when we know we need to perform write operations
-            let hashed_password = hash(password, DEFAULT_COST)
-                .map_err(|_| AppError::InternalServer)?;
+            let hashed_password =
+                hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
 
             sqlx::query_as!(
                 User,
