@@ -2,19 +2,20 @@ use axum::{extract::State, http::{StatusCode, HeaderMap}, response::IntoResponse
 use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use crate::database::db_state::AppState;
-use crate::dtos::auth_dtos::{LoginDto, AuthResponse, CreateUserResponse};
-use crate::services::auth_services::login_service::login;
+use crate::services::auth_services::refresh_service::refresh;
 use crate::errors::{AppError, auth_error::AuthError};
-use validator::Validate;
+use serde_json::json;
 
-pub async fn login_handler(
+pub async fn refresh_handler(
     State(state): State<AppState>,
     headers: HeaderMap,
     jar: CookieJar,
-    Json(payload): Json<LoginDto>,
 ) -> Result<impl IntoResponse, AppError> {
-    // 1. Validate inputs
-    payload.validate().map_err(|e| AuthError::Validation(e.to_string()))?;
+    // 1. Read refresh cookie
+    let refresh_token = jar
+        .get("refresh_token")
+        .map(|cookie| cookie.value().to_string())
+        .ok_or(AuthError::Unauthorized)?;
 
     // Extract user agent and client IP address
     let user_agent = headers
@@ -34,18 +35,17 @@ pub async fn login_handler(
                 .map(|s| s.to_string())
         });
 
-    // 2. Perform login
-    let (user, access_token, refresh_token) = login(
-        payload.email,
-        payload.password,
-        payload.device_name,
+    // 2. Perform refresh
+    let (new_access_token, new_refresh_token) = refresh(
+        refresh_token,
         user_agent,
         ip_address,
         state,
-    ).await?;
+    )
+    .await?;
 
-    // 3. Set the refresh token in a cookie
-    let cookie = Cookie::build(("refresh_token", refresh_token.clone()))
+    // 3. Set the new refresh token in a cookie
+    let cookie = Cookie::build(("refresh_token", new_refresh_token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
@@ -53,20 +53,10 @@ pub async fn login_handler(
 
     let updated_jar = jar.add(cookie);
 
-    // 4. Construct response DTO
-    let response = AuthResponse {
-        access_token,
-        refresh_token,
-        user: CreateUserResponse {
-            id: user.id,
-            email: user.email,
-            username: user.username,
-            verified: user.verified,
-        },
-    };
-
-    Ok((StatusCode::OK, updated_jar, Json(response)))
+    // 4. Return new access token in body and cookie in response
+    Ok((
+        StatusCode::OK,
+        updated_jar,
+        Json(json!({ "access_token": new_access_token })),
+    ))
 }
-
-
-

@@ -562,6 +562,114 @@
 				"description": "Logs in successfully with the verified email and password. Returns access and refresh tokens, saving them as variables."
 			},
 			"response": []
+		},
+		{
+			"name": "13. Refresh - Failure (No Cookie)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401 Unauthorized\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/auth/refresh",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				},
+				"description": "Attempts to refresh access tokens without sending the HttpOnly refresh_token cookie. Expected to fail with 401 Unauthorized."
+			},
+			"response": []
+		},
+		{
+			"name": "14. Refresh - Failure (Invalid Cookie)",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401 Unauthorized\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Cookie",
+						"value": "refresh_token=invalid_jwt_token_here",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{base_url}}/auth/refresh",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				},
+				"description": "Attempts to refresh access tokens sending an invalid/malformed refresh_token cookie. Expected to fail with 401 Unauthorized."
+			},
+			"response": []
+		},
+		{
+			"name": "15. Refresh - Success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response returns new access_token\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData).to.have.property(\"access_token\");",
+							"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/auth/refresh",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				},
+				"description": "Refreshes access tokens by sending the correct refresh_token cookie (automatically managed by Postman's cookie jar after login). Expects a new access token in the response body and a new refresh_token set in the response headers."
+			},
+			"response": []
 		}
 	],
 	"event": [
