@@ -26,7 +26,7 @@ pub async fn sign_up(
     .fetch_optional(&mut *tx)
     .await?;
 
-    let user = match existing_user {
+    let (user, otp) = match existing_user {
         Some(user) => {
             if user.verified {
                 // User is already verified, cannot claim
@@ -89,7 +89,7 @@ pub async fn sign_up(
                     .await?;
                 }
 
-                updated_user
+                (updated_user, otp)
             }
         }
         None => {
@@ -130,11 +130,20 @@ pub async fn sign_up(
             .execute(&mut *tx)
             .await?;
 
-            new_user
+            (new_user, otp)
         }
     };
 
     tx.commit().await?;
+
+    // 4. Send verification email
+    state.mail_service
+        .send_otp_email(&normalized_email, &user.username, &otp)
+        .await
+        .map_err(|e| {
+            eprintln!("Failed to send verification email: {:?}", e);
+            AppError::InternalServer
+        })?;
 
     Ok(user)
 }
