@@ -1,0 +1,16 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW() WHERE email = $3",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Timestamp",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "42d6b7aa93a3afec6c3bf09f6c780a4458215e57db09cd85d60a2fb06adbb21a"
+}

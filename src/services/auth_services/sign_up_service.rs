@@ -1,6 +1,7 @@
 use crate::database::db_state::AppState;
 use crate::database::models::user_model::User;
 use crate::errors::{AppError, auth_error::AuthError};
+use crate::utils::generate_otp::generate_otp;
 use bcrypt::{DEFAULT_COST, hash};
 use uuid::Uuid;
 
@@ -43,7 +44,7 @@ pub async fn sign_up(
                 let hashed_password =
                     hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
 
-                sqlx::query_as!(
+                let updated_user = sqlx::query_as!(
                     User,
                     r#"
                     UPDATE users 
@@ -56,7 +57,39 @@ pub async fn sign_up(
                     normalized_email
                 )
                 .fetch_one(&mut *tx)
+                .await?;
+
+                // Generate and update existing OTP
+                let otp = generate_otp().await;
+                let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(15);
+                println!(
+                    "Updating OTP {} for existing unverified email {} (expires at {})",
+                    otp, normalized_email, expires_at
+                );
+
+                let rows_affected = sqlx::query!(
+                    "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW() WHERE email = $3",
+                    otp,
+                    expires_at,
+                    normalized_email
+                )
+                .execute(&mut *tx)
                 .await?
+                .rows_affected();
+
+                if rows_affected == 0 {
+                    // Fallback to insert if no record exists yet
+                    sqlx::query!(
+                        "INSERT INTO email_otp (email, otp, expires_at) VALUES ($1, $2, $3)",
+                        normalized_email,
+                        otp,
+                        expires_at
+                    )
+                    .execute(&mut *tx)
+                    .await?;
+                }
+
+                updated_user
             }
         }
         None => {
@@ -65,7 +98,7 @@ pub async fn sign_up(
             let hashed_password =
                 hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
 
-            sqlx::query_as!(
+            let new_user = sqlx::query_as!(
                 User,
                 r#"
                 INSERT INTO users (id, email, username, password)
@@ -78,7 +111,26 @@ pub async fn sign_up(
                 hashed_password
             )
             .fetch_one(&mut *tx)
-            .await?
+            .await?;
+
+            // Generate and insert new OTP
+            let otp = generate_otp().await;
+            let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(15);
+            println!(
+                "Inserting new OTP {} for new email {} (expires at {})",
+                otp, normalized_email, expires_at
+            );
+
+            sqlx::query!(
+                "INSERT INTO email_otp (email, otp, expires_at) VALUES ($1, $2, $3)",
+                normalized_email,
+                otp,
+                expires_at
+            )
+            .execute(&mut *tx)
+            .await?;
+
+            new_user
         }
     };
 
