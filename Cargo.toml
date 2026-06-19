@@ -11,13 +11,12 @@ tokio = { version = "1.51.1", features = ["full"] }
 tower-http = { version = "0.6.8", features = ["trace"] }
 dotenvy = "0.15"
 sqlx = { version = "0.7", features = [
-    "runtime-tokio", # Async runtime
+    "runtime-tokio-native-tls", # Async runtime + native-tls
     "postgres",      # DB Driver
     "macros",        # Enables query!() macro
     "uuid",          # Support for UUID primary keys
     "chrono",        # Support for timestamps
     "migrate",       # Built-in migration runner
-    "tls-native-tls", # Support for secure TLS connections
 ] }
 uuid = { version = "1.23.0", features = ["v4", "serde"] }
 chrono = { version = "0.4.44", features = ["serde"] }
