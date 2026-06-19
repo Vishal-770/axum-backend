@@ -1,11 +1,7 @@
 use crate::database::db_state::AppState;
 use crate::errors::{AppError, auth_error::AuthError};
 
-pub async fn verify_email(
-    email: String,
-    otp: String,
-    state: AppState,
-) -> Result<(), AppError> {
+pub async fn verify_email(email: String, otp: String, state: AppState) -> Result<(), AppError> {
     let normalized_email = email.trim().to_lowercase();
 
     // 1. Start a transaction
@@ -49,12 +45,9 @@ pub async fn verify_email(
     }
 
     // 6. Delete OTP entry (or entries) for this email
-    sqlx::query!(
-        "DELETE FROM email_otp WHERE email = $1",
-        normalized_email
-    )
-    .execute(&mut *tx)
-    .await?;
+    sqlx::query!("DELETE FROM email_otp WHERE email = $1", normalized_email)
+        .execute(&mut *tx)
+        .await?;
 
     tx.commit().await?;
 

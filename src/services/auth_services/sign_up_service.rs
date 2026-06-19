@@ -2,7 +2,10 @@ use crate::database::db_state::AppState;
 use crate::database::models::user_model::User;
 use crate::errors::{AppError, auth_error::AuthError};
 use crate::utils::generate_otp::generate_otp;
-use bcrypt::{DEFAULT_COST, hash};
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
+    Argon2,
+};
 use uuid::Uuid;
 
 pub async fn sign_up(
@@ -12,7 +15,7 @@ pub async fn sign_up(
     state: AppState,
 ) -> Result<User, AppError> {
     let normalized_email = email.trim().to_lowercase();
-    println!("Sign up request for email: {}", normalized_email);
+    println!("Sign up request received");
 
     // 1. Start a transaction
     let mut tx = state.db.begin().await?;
@@ -35,14 +38,14 @@ pub async fn sign_up(
                 );
             } else {
                 // User exists but is NOT verified - allow claim (overwrite)
-                println!(
-                    "Unverified user found for email: {}. Overwriting account.",
-                    normalized_email
-                );
+                println!("Unverified user found — overwriting account (user_id={})", user.id);
 
                 // Hash the password only when we know we need to perform write operations
-                let hashed_password =
-                    hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
+                let salt = SaltString::generate(&mut OsRng);
+                let hashed_password = Argon2::default()
+                    .hash_password(password.as_bytes(), &salt)
+                    .map_err(|_| AppError::InternalServer)?
+                    .to_string();
 
                 let updated_user = sqlx::query_as!(
                     User,
@@ -62,10 +65,7 @@ pub async fn sign_up(
                 // Generate and update existing OTP
                 let otp = generate_otp().await;
                 let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(10);
-                println!(
-                    "Updating OTP {} for existing unverified email {} (expires at {})",
-                    otp, normalized_email, expires_at
-                );
+                println!("OTP issued for existing unverified user");
 
                 let rows_affected = sqlx::query!(
                     "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW() WHERE email = $3",
@@ -95,8 +95,11 @@ pub async fn sign_up(
         None => {
             // No existing user - create new one
             // Hash the password only when we know we need to perform write operations
-            let hashed_password =
-                hash(password, DEFAULT_COST).map_err(|_| AppError::InternalServer)?;
+            let salt = SaltString::generate(&mut OsRng);
+            let hashed_password = Argon2::default()
+                .hash_password(password.as_bytes(), &salt)
+                .map_err(|_| AppError::InternalServer)?
+                .to_string();
 
             let new_user = sqlx::query_as!(
                 User,
@@ -116,10 +119,7 @@ pub async fn sign_up(
             // Generate and insert new OTP
             let otp = generate_otp().await;
             let expires_at = chrono::Utc::now().naive_utc() + chrono::Duration::minutes(10);
-            println!(
-                "Inserting new OTP {} for new email {} (expires at {})",
-                otp, normalized_email, expires_at
-            );
+            println!("OTP issued for new user");
 
             let rows_affected = sqlx::query!(
                 "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW() WHERE email = $3",

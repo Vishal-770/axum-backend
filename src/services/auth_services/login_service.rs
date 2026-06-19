@@ -1,10 +1,11 @@
-
-
+use crate::auth::jwt::{create_access_token, create_refresh_token};
 use crate::database::db_state::AppState;
 use crate::database::models::user_model::User;
 use crate::errors::{AppError, auth_error::AuthError};
-use crate::auth::jwt::{create_access_token, create_refresh_token};
-use bcrypt::verify;
+use argon2::{
+    password_hash::{PasswordHash, PasswordVerifier},
+    Argon2,
+};
 
 pub async fn login(
     email: String,
@@ -15,7 +16,7 @@ pub async fn login(
     state: AppState,
 ) -> Result<(User, String, String), AppError> {
     let normalized_email = email.trim().to_lowercase();
-    println!("Login attempt for email: {}", normalized_email);
+    println!("Login attempt");
 
     // 1. Fetch user by email
     let user = sqlx::query_as!(
@@ -36,37 +37,50 @@ pub async fn login(
         return Err(AuthError::Unauthorized.into());
     }
 
-    // 3. Verify password
-    let is_valid = verify(password, &user.password).map_err(|_| AppError::InternalServer)?;
+    // 3. Verify password with Argon2id
+    let parsed_hash =
+        PasswordHash::new(&user.password).map_err(|_| AppError::InternalServer)?;
+    let is_valid = Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .is_ok();
     if !is_valid {
         return Err(AuthError::Unauthorized.into());
     }
 
     // 4. Generate JWT tokens
-    let access_secret = std::env::var("JWT_ACCESS_SECRET").unwrap_or_else(|_| "default_jwt_access_secret_key_1234567890".to_string());
-    let refresh_secret = std::env::var("JWT_REFRESH_SECRET").unwrap_or_else(|_| "default_jwt_refresh_secret_key_0987654321".to_string());
+    let access_secret = std::env::var("JWT_ACCESS_SECRET")
+        .expect("JWT_ACCESS_SECRET must be set");
+    let refresh_secret = std::env::var("JWT_REFRESH_SECRET")
+        .expect("JWT_REFRESH_SECRET must be set");
 
-    let access_token = create_access_token(user.id, &access_secret).map_err(|_| AppError::InternalServer)?;
-    let (refresh_token, jti) = create_refresh_token(user.id, &refresh_secret).map_err(|_| AppError::InternalServer)?;
+    // Each new login starts a fresh token family used for reuse detection
+    let family_id = uuid::Uuid::new_v4();
+
+    let access_token =
+        create_access_token(user.id, family_id, &access_secret).map_err(|_| AppError::InternalServer)?;
+    let (refresh_token, jti, expires_at) =
+        create_refresh_token(user.id, &refresh_secret).map_err(|_| AppError::InternalServer)?;
 
     // Calculate SHA-256 hash of the refresh token
-    use sha2::{Sha256, Digest};
+    use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(refresh_token.as_bytes());
     let hash_result = hasher.finalize();
-    let token_hash = hash_result.iter().map(|b| format!("{:02x}", b)).collect::<String>();
-
-    let expires_at = chrono::Utc::now() + chrono::Duration::days(7);
+    let token_hash = hash_result
+        .iter()
+        .map(|b| format!("{:02x}", b))
+        .collect::<String>();
 
     sqlx::query!(
-        "INSERT INTO refresh_tokens (id, user_id, token_hash, device_name, user_agent, ip_address, expires_at) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        "INSERT INTO refresh_tokens (id, user_id, token_hash, device_name, user_agent, ip_address, expires_at, family_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
         jti,
         user.id,
         token_hash,
         device_name,
         user_agent,
         ip_address,
-        expires_at
+        expires_at,
+        family_id
     )
     .execute(&state.db)
     .await?;

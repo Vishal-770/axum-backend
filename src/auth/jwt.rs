@@ -5,6 +5,7 @@ use uuid::Uuid;
 
 pub fn create_access_token(
     user_id: Uuid,
+    family_id: Uuid,
     secret: &str,
 ) -> Result<String, jsonwebtoken::errors::Error> {
     let now = Utc::now();
@@ -15,6 +16,7 @@ pub fn create_access_token(
             sub: user_id,
             iat: now.timestamp() as usize,
             exp: (now + Duration::minutes(15)).timestamp() as usize,
+            family_id,
         },
         &EncodingKey::from_secret(secret.as_bytes()),
     )
@@ -22,18 +24,21 @@ pub fn create_access_token(
 pub fn create_refresh_token(
     user_id: Uuid,
     secret: &str,
-) -> Result<(String, Uuid), jsonwebtoken::errors::Error> {
+) -> Result<(String, Uuid, chrono::DateTime<chrono::Utc>), jsonwebtoken::errors::Error> {
     let now = Utc::now();
     let jti = Uuid::new_v4();
+    // Single source of truth: expiry is computed here and returned to the caller.
+    // The DB stores this exact value — no separate Duration::days(7) anywhere else.
+    let expires_at = now + Duration::days(7);
     let token = encode(
         &Header::default(),
         &RefreshClaims {
             sub: user_id,
             iat: now.timestamp() as usize,
-            exp: (now + Duration::days(7)).timestamp() as usize,
+            exp: expires_at.timestamp() as usize,
             jti: jti,
         },
         &EncodingKey::from_secret(secret.as_bytes()),
     )?;
-    Ok((token, jti))
+    Ok((token, jti, expires_at))
 }

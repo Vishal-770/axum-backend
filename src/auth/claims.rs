@@ -6,6 +6,7 @@ pub struct AccessClaims {
     pub sub: Uuid,
     pub exp: usize,
     pub iat: usize,
+    pub family_id: Uuid,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

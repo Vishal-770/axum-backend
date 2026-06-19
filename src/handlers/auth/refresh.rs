@@ -44,19 +44,25 @@ pub async fn refresh_handler(
     )
     .await?;
 
-    // 3. Set the new refresh token in a cookie
-    let cookie = Cookie::build(("refresh_token", new_refresh_token))
+    // 3. Set the new access and refresh tokens in cookies
+    let access_cookie = Cookie::build(("access_token", new_access_token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .build();
 
-    let updated_jar = jar.add(cookie);
+    let refresh_cookie = Cookie::build(("refresh_token", new_refresh_token))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .build();
 
-    // 4. Return new access token in body and cookie in response
+    let updated_jar = jar.add(access_cookie).add(refresh_cookie);
+
+    // 4. Return success message
     Ok((
         StatusCode::OK,
         updated_jar,
-        Json(json!({ "access_token": new_access_token })),
+        Json(json!({ "message": "Tokens refreshed successfully" })),
     ))
 }

@@ -15,6 +15,9 @@ pub enum AuthError {
     InternalServer,
     #[error("Invalid Code")]
     InvalidCode,
+
+    #[error("Weak password")]
+    WeakPassword,
 }
 
 impl IntoResponse for AuthError {
@@ -26,6 +29,7 @@ impl IntoResponse for AuthError {
             AuthError::InternalServer =>
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
             AuthError::InvalidCode => (StatusCode::BAD_REQUEST, "Invalid Code".to_string()),
+            AuthError::WeakPassword => (StatusCode::BAD_REQUEST, "Password must be at least 8 characters".to_string()),
         };
 
         let body = Json(json!({

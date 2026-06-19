@@ -44,19 +44,23 @@ pub async fn login_handler(
         state,
     ).await?;
 
-    // 3. Set the refresh token in a cookie
-    let cookie = Cookie::build(("refresh_token", refresh_token.clone()))
+    // 3. Set the access and refresh tokens in cookies
+    let access_cookie = Cookie::build(("access_token", access_token))
         .path("/")
         .http_only(true)
         .same_site(SameSite::Lax)
         .build();
 
-    let updated_jar = jar.add(cookie);
+    let refresh_cookie = Cookie::build(("refresh_token", refresh_token))
+        .path("/")
+        .http_only(true)
+        .same_site(SameSite::Lax)
+        .build();
+
+    let updated_jar = jar.add(access_cookie).add(refresh_cookie);
 
     // 4. Construct response DTO
     let response = AuthResponse {
-        access_token,
-        refresh_token,
         user: CreateUserResponse {
             id: user.id,
             email: user.email,

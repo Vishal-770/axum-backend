@@ -1,0 +1,149 @@
+{
+  "info": {
+    "_postman_id": "axum-backend-auth",
+    "name": "Axum Backend — Auth",
+    "description": "Manual testing collection for the Axum auth API.\n\n**Cookie note:** Login and Refresh set `access_token` + `refresh_token` as HttpOnly cookies. Postman automatically stores and sends them on subsequent requests as long as \"Automatically follow redirects\" is ON and the cookie jar is enabled (Settings → Cookies).\n\n**Typical flow:**\n1. Sign Up → Verify Email → Login → Refresh → Logout\n2. Forgot Password → Reset Password",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Sign Up",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/sign-up",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "sign-up"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"user_name\": \"testuser\",\n  \"password\": \"supersecret99\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Creates a new user account. A 6-digit OTP is emailed to the address.\n\n**Validation rules:**\n- `email` — valid email format\n- `user_name` — min 3 characters\n- `password` — min 8 characters\n\n**Success:** `201` with user object.\n**Error:** `409` if email already verified."
+      }
+    },
+    {
+      "name": "2. Verify Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/verify-email",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "verify-email"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"otp\": \"123456\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Verifies the account using the 6-digit OTP sent during sign-up.\n\n**Replace** `otp` with the code from the email (or check `LAST_RESET_OTP` in server logs for dev).\n\n**Success:** `200`.\n**Error:** `400` for invalid/expired OTP."
+      }
+    },
+    {
+      "name": "3. Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\",\n  \"password\": \"supersecret99\",\n  \"device_name\": \"Postman\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Authenticates the user. On success, the server sets two **HttpOnly cookies**:\n- `access_token` — short-lived JWT\n- `refresh_token` — long-lived JWT (7 days)\n\nPostman stores these automatically. No manual copy-paste needed.\n\n**Success:** `200` with user object.\n**Error:** `401` for bad credentials or unverified account."
+      }
+    },
+    {
+      "name": "4. Refresh Tokens",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/refresh",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "refresh"]
+        },
+        "body": {
+          "mode": "none"
+        },
+        "description": "Issues a new `access_token` + `refresh_token` pair using the current `refresh_token` cookie (token rotation).\n\nNo request body needed — the server reads the cookie automatically.\n\n**Success:** `200`, new cookies are set.\n**Error:** `401` if the refresh token is missing, expired, or already invalidated."
+      }
+    },
+    {
+      "name": "5. Logout",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/auth/logout",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "logout"]
+        },
+        "body": {
+          "mode": "none"
+        },
+        "description": "Deletes the current device's refresh token from the database and clears both cookies from the browser/Postman jar.\n\nNo request body needed.\n\n**Success:** `200` `{ \"message\": \"Logged out successfully\" }`.\n\nAfter this, calling Refresh will return `401`."
+      }
+    },
+    {
+      "name": "6. Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/forgot-password",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "forgot-password"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"testuser@example.com\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Sends a 6-digit OTP reset code to the given email address.\n\nAlways returns `200` regardless of whether the email exists (prevents user enumeration).\n\n**Dev tip:** the OTP is also printed to stdout by the server. Check the terminal or the `LAST_RESET_OTP` static in `forgot_password_service.rs`."
+      }
+    },
+    {
+      "name": "7. Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/reset-password",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "reset-password"]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reset_token\": \"123456\",\n  \"new_password\": \"newpassword99\"\n}",
+          "options": { "raw": { "language": "json" } }
+        },
+        "description": "Resets the user's password using the OTP received in the forgot-password email.\n\n**Fields:**\n- `reset_token` — the raw 6-digit OTP from the email\n- `new_password` — min 8 characters\n\n**On success:**\n- Password is updated (Argon2id hash)\n- The used OTP record is marked as `used_at`\n- **All refresh tokens for the user are deleted** (forced re-login on all devices)\n\n**Error:** `400` for invalid/expired token or weak password."
+      }
+    }
+  ]
+}

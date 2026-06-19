@@ -525,15 +525,22 @@
 							"    pm.response.to.have.status(200);",
 							"});",
 							"",
-							"pm.test(\"Tokens are returned successfully\", function () {",
+							"pm.test(\"User profile is returned without tokens in JSON\", function () {",
 							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData).to.have.property(\"access_token\");",
-							"    pm.expect(jsonData).to.have.property(\"refresh_token\");",
-							"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
-							"    pm.collectionVariables.set(\"refresh_token\", jsonData.refresh_token);",
+							"    pm.expect(jsonData).to.have.property(\"user\");",
+							"    pm.expect(jsonData.user).to.have.property(\"id\");",
+							"    pm.expect(jsonData.user.email).to.eql(pm.collectionVariables.get(\"test_email\"));",
+							"    pm.expect(jsonData).to.not.have.property(\"access_token\");",
+							"    pm.expect(jsonData).to.not.have.property(\"refresh_token\");",
+							"});",
+							"",
+							"pm.test(\"Cookies access_token and refresh_token are set\", function () {",
+							"    pm.expect(pm.cookies.has(\"access_token\")).to.be.true;",
+							"    pm.expect(pm.cookies.has(\"refresh_token\")).to.be.true;",
 							"});"
 						],
-						"type": "text/javascript"
+						"type": "text/javascript",
+						"packages": {}
 					}
 				}
 			],
@@ -559,22 +566,34 @@
 						"login"
 					]
 				},
-				"description": "Logs in successfully with the verified email and password. Returns access and refresh tokens, saving them as variables."
+				"description": "Logs in successfully. Expects access_token and refresh_token cookies to be set, and only user details returned in the JSON body."
 			},
 			"response": []
 		},
 		{
-			"name": "13. Refresh - Failure (No Cookie)",
+			"name": "13. Refresh - Success",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 401 Unauthorized\", function () {",
-							"    pm.response.to.have.status(401);",
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response body does not contain tokens\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.eql(\"Tokens refreshed successfully\");",
+							"    pm.expect(jsonData).to.not.have.property(\"access_token\");",
+							"});",
+							"",
+							"pm.test(\"New cookies are set\", function () {",
+							"    pm.expect(pm.cookies.has(\"access_token\")).to.be.true;",
+							"    pm.expect(pm.cookies.has(\"refresh_token\")).to.be.true;",
 							"});"
 						],
-						"type": "text/javascript"
+						"type": "text/javascript",
+						"packages": {}
 					}
 				}
 			],
@@ -591,12 +610,58 @@
 						"refresh"
 					]
 				},
-				"description": "Attempts to refresh access tokens without sending the HttpOnly refresh_token cookie. Expected to fail with 401 Unauthorized."
+				"description": "Refreshes access and refresh tokens by sending the correct refresh_token cookie (automatically managed by Postman's cookie jar after login). Expects a success message in the response body, and rotated access_token and refresh_token cookies."
 			},
 			"response": []
 		},
 		{
-			"name": "14. Refresh - Failure (Invalid Cookie)",
+			"name": "14. Refresh - Failure (No Cookie)",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							"const jar = pm.cookies.jar();",
+							"jar.clear(pm.collectionVariables.get(\"base_url\"), function (error) {",
+							"    if (error) { console.log(error); }",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 401 Unauthorized\", function () {",
+							"    pm.response.to.have.status(401);",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"url": {
+					"raw": "{{base_url}}/auth/refresh",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"refresh"
+					]
+				},
+				"description": "Attempts to refresh access tokens without sending the HttpOnly refresh_token cookie (cleared in pre-request). Expected to fail with 401 Unauthorized."
+			},
+			"response": []
+		},
+		{
+			"name": "15. Refresh - Failure (Invalid Cookie)",
 			"event": [
 				{
 					"listen": "test",
@@ -606,7 +671,8 @@
 							"    pm.response.to.have.status(401);",
 							"});"
 						],
-						"type": "text/javascript"
+						"type": "text/javascript",
+						"packages": {}
 					}
 				}
 			],
@@ -634,7 +700,7 @@
 			"response": []
 		},
 		{
-			"name": "15. Refresh - Success",
+			"name": "16. Login again for logout test",
 			"event": [
 				{
 					"listen": "test",
@@ -644,13 +710,65 @@
 							"    pm.response.to.have.status(200);",
 							"});",
 							"",
-							"pm.test(\"Response returns new access_token\", function () {",
-							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData).to.have.property(\"access_token\");",
-							"    pm.collectionVariables.set(\"access_token\", jsonData.access_token);",
+							"pm.test(\"Cookies access_token and refresh_token are set\", function () {",
+							"    pm.expect(pm.cookies.has(\"access_token\")).to.be.true;",
+							"    pm.expect(pm.cookies.has(\"refresh_token\")).to.be.true;",
 							"});"
 						],
-						"type": "text/javascript"
+						"type": "text/javascript",
+						"packages": {}
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"email\": \"{{test_email}}\",\n    \"password\": \"newpassword789\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "{{base_url}}/auth/login",
+					"host": [
+						"{{base_url}}"
+					],
+					"path": [
+						"auth",
+						"login"
+					]
+				},
+				"description": "Logs in again to set cookies for the logout test."
+			},
+			"response": []
+		},
+		{
+			"name": "17. Logout - Success",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"pm.test(\"Status code is 200 OK\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});",
+							"",
+							"pm.test(\"Response body has success message\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.expect(jsonData.message).to.eql(\"Logged out successfully\");",
+							"});",
+							"",
+							"pm.test(\"Cookies are cleared\", function () {",
+							"    pm.expect(pm.cookies.has(\"access_token\")).to.be.false;",
+							"    pm.expect(pm.cookies.has(\"refresh_token\")).to.be.false;",
+							"});"
+						],
+						"type": "text/javascript",
+						"packages": {}
 					}
 				}
 			],
@@ -658,16 +776,16 @@
 				"method": "POST",
 				"header": [],
 				"url": {
-					"raw": "{{base_url}}/auth/refresh",
+					"raw": "{{base_url}}/auth/logout",
 					"host": [
 						"{{base_url}}"
 					],
 					"path": [
 						"auth",
-						"refresh"
+						"logout"
 					]
 				},
-				"description": "Refreshes access tokens by sending the correct refresh_token cookie (automatically managed by Postman's cookie jar after login). Expects a new access token in the response body and a new refresh_token set in the response headers."
+				"description": "Logs out the user, deleting the session from the DB and clearing cookies."
 			},
 			"response": []
 		}

@@ -1,0 +1,35 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT pr.id, pr.token_hash, pr.expires_at\n        FROM password_resets pr\n        JOIN users u ON pr.user_id = u.id\n        WHERE u.email = $1 AND pr.used_at IS NULL AND pr.expires_at > $2\n        ORDER BY pr.created_at DESC\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "token_hash",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "expires_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b0ba8d4f4c7114785b2d26d12a651384cd26c966278947850bb21c61cf53171a"
+}

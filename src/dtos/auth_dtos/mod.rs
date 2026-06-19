@@ -14,15 +14,10 @@ pub struct LoginDto {
 pub struct SignUpDto {
     #[validate(email)]
     pub email: String,
-    #[validate(length(min = 6, message = "Password must be at least 6 characters long"))]
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
     pub password: String,
     #[validate(length(min = 3, message = "Username must be at least 3 characters long"))]
     pub user_name: String,
-}
-
-#[derive(Deserialize)]
-pub struct LogoutDto {
-    pub refresh_token: String,
 }
 
 #[derive(Debug, Serialize)]
@@ -43,9 +38,21 @@ pub struct VerifyEmailDto {
 
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {
-    pub access_token: String,
-    pub refresh_token: String,
     pub user: CreateUserResponse,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct ForgotPasswordDto {
+    #[validate(email)]
+    pub email: String,
+}
+
+#[derive(Deserialize, Validate)]
+pub struct ResetPasswordDto {
+    #[validate(length(min = 1, message = "Reset token is required"))]
+    pub reset_token: String,
+    #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
+    pub new_password: String,
 }
 
 

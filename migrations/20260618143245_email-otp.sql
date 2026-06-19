@@ -8,3 +8,4 @@ CREATE TABLE email_otp (
 );
 
 CREATE INDEX idx_email_otp_email ON email_otp (email);
+
