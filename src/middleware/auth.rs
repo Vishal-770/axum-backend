@@ -13,6 +13,7 @@ use crate::errors::{AppError, auth_error::AuthError};
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimsExtension {
     pub user_id: Uuid,
+    pub family_id: Uuid,
 }
 
 pub async fn require_auth(
@@ -38,9 +39,10 @@ pub async fn require_auth(
     )
     .map_err(|_| AppError::Auth(AuthError::Unauthorized))?;
 
-    // 4. Inject the user_id into request extensions
+    // 4. Inject the user_id and family_id into request extensions
     req.extensions_mut().insert(ClaimsExtension {
         user_id: token_data.claims.sub,
+        family_id: token_data.claims.family_id,
     });
 
     // 5. Proceed to the next handler/middleware
