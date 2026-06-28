@@ -14,6 +14,16 @@ async fn setup_db() -> sqlx::PgPool {
     connect_db(&db_url).await
 }
 
+async fn setup_redis() -> redis::aio::MultiplexedConnection {
+    dotenvy::dotenv().ok();
+    let redis_url = std::env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
+    redis_client
+        .get_multiplexed_async_connection()
+        .await
+        .expect("Failed to connect to Redis")
+}
+
 // Extract cookies from Set-Cookie headers in a response
 fn extract_cookies(headers: &axum::http::HeaderMap) -> (Option<String>, Option<String>) {
     let mut access_token = None;
@@ -41,7 +51,8 @@ fn extract_cookies(headers: &axum::http::HeaderMap) -> (Option<String>, Option<S
 #[tokio::test]
 async fn test_full_cookie_auth_flow() {
     let pool = setup_db().await;
-    let app = app_router(pool.clone());
+    let redis_conn = setup_redis().await;
+    let app = app_router(pool.clone(), redis_conn);
 
     // Generate unique email and username to avoid conflict
     let test_uuid = Uuid::new_v4().to_string();
@@ -298,7 +309,8 @@ async fn test_full_cookie_auth_flow() {
 #[tokio::test]
 async fn test_password_reset_flow() {
     let pool = setup_db().await;
-    let app = app_router(pool.clone());
+    let redis_conn = setup_redis().await;
+    let app = app_router(pool.clone(), redis_conn);
 
     // Generate unique email and username to avoid conflict
     let test_uuid = Uuid::new_v4().to_string();

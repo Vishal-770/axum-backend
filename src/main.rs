@@ -15,7 +15,14 @@ async fn main() {
         .await
         .expect("Failed to run database migrations");
 
-    let app=app_router(pool);
+    let redis_url = env::var("REDIS_URL").expect("REDIS_URL must be set");
+    let redis_client = redis::Client::open(redis_url).expect("Invalid Redis URL");
+    let redis_conn = redis_client
+        .get_multiplexed_async_connection()
+        .await
+        .expect("Failed to connect to Redis");
+
+    let app=app_router(pool, redis_conn);
     let listener=tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("listening on port 3000");
     axum::serve(listener,app).await.unwrap();

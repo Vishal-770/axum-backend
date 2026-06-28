@@ -13,9 +13,9 @@ async fn root_handler() -> &'static str {
     "Welcome to the Axum Backend API!"
 }
 
-pub fn app_router(pool: PgPool) -> Router {
+pub fn app_router(pool: PgPool, redis_conn: redis::aio::MultiplexedConnection) -> Router {
     let mail_service = MailService::new();
-    let state = AppState { db: pool, mail_service };
+    let state = AppState { db: pool, mail_service, redis: redis_conn };
     Router::new()
         .route("/", get(root_handler))
         .nest("/v1", v1_routes())

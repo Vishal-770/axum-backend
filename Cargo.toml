@@ -32,6 +32,7 @@ lettre = { version = "0.11", features = [
 jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 sha2 = "0.11.0"
 axum-extra = { version = "0.12.6", features = ["cookie"] }
+redis = { version = "0.27.0", features = ["tokio-comp"] }
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }
