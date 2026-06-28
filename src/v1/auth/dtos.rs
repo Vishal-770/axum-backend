@@ -60,3 +60,11 @@ pub struct ResendOtpDto {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
 }
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ResendResetOtpDto {
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+    #[validate(length(min = 1, message = "Reset token is required"))]
+    pub reset_token: String,
+}

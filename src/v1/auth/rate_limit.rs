@@ -118,6 +118,7 @@ pub async fn rate_limiter(
         ("POST", "/v1/auth/forgot-password") => (3, 15 * 60 * 1000, RateLimitKeyType::EmailAndIp),
         ("POST", "/v1/auth/reset-password") => (5, 15 * 60 * 1000, RateLimitKeyType::ResetToken),
         ("POST", "/v1/auth/resend-otp") => (3, 60 * 1000, RateLimitKeyType::IpAndEmail),
+        ("POST", "/v1/auth/resend-reset-otp") => (3, 60 * 1000, RateLimitKeyType::IpAndEmail),
         ("POST", "/v1/auth/logout") => (30, 60 * 1000, RateLimitKeyType::User),
         ("GET", "/v1/sessions") => (60, 60 * 1000, RateLimitKeyType::User),
         ("GET", "/v1/sessions/current") => (120, 60 * 1000, RateLimitKeyType::User),

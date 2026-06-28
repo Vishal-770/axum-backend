@@ -10,6 +10,7 @@ use super::handlers::{
     sign_up::sign_up_handler,
     verify_email::verify_email_handler,
     resend_otp::resend_otp_handler,
+    resend_reset_otp::resend_reset_otp_handler,
 };
 
 use axum::middleware::from_fn_with_state;
@@ -24,5 +25,6 @@ pub fn auth_routes(state: AppState) -> Router<AppState> {
         .route("/verify-email", post(verify_email_handler))
         .route("/refresh", post(refresh_handler))
         .route("/resend-otp", post(resend_otp_handler))
+        .route("/resend-reset-otp", post(resend_reset_otp_handler))
         .route_layer(from_fn_with_state(state, super::rate_limit::rate_limiter))
 }
