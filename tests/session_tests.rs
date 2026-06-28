@@ -55,7 +55,7 @@ async fn create_verified_user(
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/sign-up")
+                .uri("/v1/auth/sign-up")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&signup_body).unwrap()))
                 .unwrap(),
@@ -80,7 +80,7 @@ async fn create_verified_user(
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/verify-email")
+                .uri("/v1/auth/verify-email")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&verify_body).unwrap()))
                 .unwrap(),
@@ -122,7 +122,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_body_1).unwrap()))
                 .unwrap(),
@@ -144,7 +144,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_body_2).unwrap()))
                 .unwrap(),
@@ -166,7 +166,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_body_b).unwrap()))
                 .unwrap(),
@@ -183,7 +183,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/sessions")
+                .uri("/v1/sessions")
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),
@@ -213,7 +213,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/sessions/current")
+                .uri("/v1/sessions/current")
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),
@@ -234,7 +234,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("DELETE")
-                .uri(format!("/sessions/{}", session_2_id))
+                .uri(format!("/v1/sessions/{}", session_2_id))
                 .header(header::COOKIE, format!("access_token={}", access_b))
                 .body(Body::empty())
                 .unwrap(),
@@ -250,7 +250,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("DELETE")
-                .uri(format!("/sessions/{}", session_2_id))
+                .uri(format!("/v1/sessions/{}", session_2_id))
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),
@@ -265,7 +265,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/sessions")
+                .uri("/v1/sessions")
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),
@@ -286,7 +286,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/sessions")
+                .uri("/v1/sessions")
                 .header(header::COOKIE, format!("access_token={}", access_2))
                 .body(Body::empty())
                 .unwrap(),
@@ -303,7 +303,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/sessions/logout-all")
+                .uri("/v1/sessions/logout-all")
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),
@@ -318,7 +318,7 @@ async fn test_session_management_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/sessions")
+                .uri("/v1/sessions")
                 .header(header::COOKIE, format!("access_token={}", access_1))
                 .body(Body::empty())
                 .unwrap(),

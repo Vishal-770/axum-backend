@@ -61,7 +61,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/sign-up")
+                .uri("/v1/auth/sign-up")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&signup_body).unwrap()))
                 .unwrap(),
@@ -91,7 +91,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/verify-email")
+                .uri("/v1/auth/verify-email")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&verify_body).unwrap()))
                 .unwrap(),
@@ -112,7 +112,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_body).unwrap()))
                 .unwrap(),
@@ -143,7 +143,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/me")
+                .uri("/v1/me")
                 .header(header::COOKIE, format!("access_token={}", access_token))
                 .body(Body::empty())
                 .unwrap(),
@@ -171,7 +171,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("GET")
-                .uri("/me")
+                .uri("/v1/me")
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -186,7 +186,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/refresh")
+                .uri("/v1/auth/refresh")
                 .header(header::COOKIE, format!("refresh_token={}", refresh_token))
                 .body(Body::empty())
                 .unwrap(),
@@ -220,7 +220,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/refresh")
+                .uri("/v1/auth/refresh")
                 .header(header::COOKIE, format!("refresh_token={}", refresh_token))
                 .body(Body::empty())
                 .unwrap(),
@@ -236,7 +236,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/logout")
+                .uri("/v1/auth/logout")
                 .header(
                     header::COOKIE,
                     format!("refresh_token={}", new_refresh_token),
@@ -281,7 +281,7 @@ async fn test_full_cookie_auth_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/refresh")
+                .uri("/v1/auth/refresh")
                 .header(
                     header::COOKIE,
                     format!("refresh_token={}", new_refresh_token),
@@ -319,7 +319,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/sign-up")
+                .uri("/v1/auth/sign-up")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&signup_body).unwrap()))
                 .unwrap(),
@@ -348,7 +348,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/verify-email")
+                .uri("/v1/auth/verify-email")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&verify_body).unwrap()))
                 .unwrap(),
@@ -368,7 +368,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/forgot-password")
+                .uri("/v1/auth/forgot-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&forgot_body).unwrap()))
                 .unwrap(),
@@ -389,11 +389,11 @@ async fn test_password_reset_flow() {
     // 4. Retrieve raw OTP code and reset token from the static test hooks
     let (_otp, reset_token) = {
         let otp_guard =
-            rust_backend::services::auth_services::forgot_password_service::LAST_RESET_OTP
+            rust_backend::v1::auth::services::forgot_password_service::LAST_RESET_OTP
                 .lock()
                 .unwrap();
         let token_guard =
-            rust_backend::services::auth_services::forgot_password_service::LAST_RESET_TOKEN
+            rust_backend::v1::auth::services::forgot_password_service::LAST_RESET_TOKEN
                 .lock()
                 .unwrap();
         (
@@ -419,7 +419,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/reset-password")
+                .uri("/v1/auth/reset-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(
                     serde_json::to_string(&reset_invalid_otp).unwrap(),
@@ -442,7 +442,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/reset-password")
+                .uri("/v1/auth/reset-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&reset_short_pwd).unwrap()))
                 .unwrap(),
@@ -463,7 +463,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/reset-password")
+                .uri("/v1/auth/reset-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&reset_valid).unwrap()))
                 .unwrap(),
@@ -491,7 +491,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_old).unwrap()))
                 .unwrap(),
@@ -512,7 +512,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/login")
+                .uri("/v1/auth/login")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&login_new).unwrap()))
                 .unwrap(),
@@ -528,7 +528,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/reset-password")
+                .uri("/v1/auth/reset-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(serde_json::to_string(&reset_valid).unwrap()))
                 .unwrap(),
@@ -548,7 +548,7 @@ async fn test_password_reset_flow() {
         .oneshot(
             Request::builder()
                 .method("POST")
-                .uri("/auth/forgot-password")
+                .uri("/v1/auth/forgot-password")
                 .header(header::CONTENT_TYPE, "application/json")
                 .body(Body::from(
                     serde_json::to_string(&forgot_non_existent).unwrap(),
