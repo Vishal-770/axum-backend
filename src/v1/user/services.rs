@@ -1,7 +1,8 @@
-use crate::database::db_state::AppState;
-use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
-use super::model::User;
 use super::dtos::UserMeResponse;
+use super::model::User;
+use crate::database::db_state::AppState;
+use crate::errors::AppError;
+use crate::v1::auth::errors::AuthError;
 use uuid::Uuid;
 
 pub async fn get_me(user_id: Uuid, state: AppState) -> Result<UserMeResponse, AppError> {
