@@ -4,7 +4,7 @@ use axum_extra::extract::cookie::{Cookie, SameSite};
 use crate::database::db_state::AppState;
 use super::super::dtos::{LoginDto, AuthResponse, CreateUserResponse};
 use super::super::services::login_service::login;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use validator::Validate;
 
 pub async fn login_handler(

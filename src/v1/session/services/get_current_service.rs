@@ -1,6 +1,6 @@
 use crate::database::db_state::AppState;
 use super::super::dtos::SessionResponseDto;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use uuid::Uuid;
 
 pub async fn get_current_session(

@@ -1,6 +1,6 @@
 use crate::database::db_state::AppState;
 use crate::v1::user::model::User;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use crate::utils::generate_otp::generate_otp;
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},

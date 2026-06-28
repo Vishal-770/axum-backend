@@ -1,7 +1,7 @@
-use crate::auth::claims::RefreshClaims;
-use crate::auth::jwt::{create_access_token, create_refresh_token};
+use crate::v1::auth::claims::RefreshClaims;
+use crate::v1::auth::jwt::{create_access_token, create_refresh_token};
 use crate::database::db_state::AppState;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 use sha2::{Digest, Sha256};
 

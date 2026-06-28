@@ -7,7 +7,7 @@ use axum::{
 use crate::database::db_state::AppState;
 use super::super::dtos::VerifyEmailDto;
 use super::super::services::verify_email_service::verify_email;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use validator::Validate;
 use serde_json::json;
 

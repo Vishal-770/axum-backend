@@ -1,5 +1,5 @@
 use crate::database::db_state::AppState;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 
 pub async fn verify_email(email: String, otp: String, state: AppState) -> Result<(), AppError> {
     let normalized_email = email.trim().to_lowercase();

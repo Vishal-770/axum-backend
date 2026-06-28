@@ -7,8 +7,9 @@ use axum_extra::extract::CookieJar;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 use uuid::Uuid;
 
-use crate::auth::claims::AccessClaims;
-use crate::errors::{AppError, auth_error::AuthError};
+use super::claims::AccessClaims;
+use super::errors::AuthError;
+use crate::errors::AppError;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimsExtension {

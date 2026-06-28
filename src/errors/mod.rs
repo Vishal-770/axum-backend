@@ -1,5 +1,3 @@
-pub mod auth_error;
-
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -7,7 +5,7 @@ use axum::{
 };
 use serde_json::json;
 use thiserror::Error;
-use self::auth_error::AuthError;
+use crate::v1::auth::errors::AuthError;
 
 #[derive(Error, Debug)]
 pub enum AppError {

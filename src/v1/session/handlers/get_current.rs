@@ -1,7 +1,7 @@
 use axum::{extract::State, response::IntoResponse, Extension, Json};
 use crate::database::db_state::AppState;
 use crate::errors::AppError;
-use crate::middleware::auth::ClaimsExtension;
+use crate::v1::auth::middleware::ClaimsExtension;
 use super::super::services::get_current_service::get_current_session;
 
 pub async fn get_current_handler(

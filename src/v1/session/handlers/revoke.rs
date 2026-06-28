@@ -1,7 +1,7 @@
 use axum::{extract::{Path, State}, response::IntoResponse, Extension, Json};
 use crate::database::db_state::AppState;
 use crate::errors::AppError;
-use crate::middleware::auth::ClaimsExtension;
+use crate::v1::auth::middleware::ClaimsExtension;
 use super::super::services::revoke_service::revoke_session;
 use uuid::Uuid;
 use serde_json::json;

@@ -2,7 +2,7 @@ use axum::{extract::State, response::IntoResponse, Json};
 use crate::database::db_state::AppState;
 use super::super::dtos::ResetPasswordDto;
 use super::super::services::reset_password_service::reset_password;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use validator::Validate;
 use serde_json::json;
 

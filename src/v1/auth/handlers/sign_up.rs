@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use crate::database::db_state::AppState;
 use super::super::dtos::{SignUpDto, CreateUserResponse};
 use super::super::services::sign_up_service::sign_up;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use validator::Validate;
 use axum::http::StatusCode;
 

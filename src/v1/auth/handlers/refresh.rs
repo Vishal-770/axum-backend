@@ -3,7 +3,7 @@ use axum_extra::extract::CookieJar;
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use crate::database::db_state::AppState;
 use super::super::services::refresh_service::refresh;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 use serde_json::json;
 
 pub async fn refresh_handler(

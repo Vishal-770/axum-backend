@@ -5,7 +5,7 @@ use argon2::{
 use sha2::{Digest, Sha256};
 
 use crate::database::db_state::AppState;
-use crate::errors::{AppError, auth_error::AuthError};
+use crate::errors::AppError; use crate::v1::auth::errors::AuthError;
 
 pub async fn reset_password(
     reset_token: String,

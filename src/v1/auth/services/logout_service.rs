@@ -1,4 +1,4 @@
-use crate::auth::claims::RefreshClaims;
+use crate::v1::auth::claims::RefreshClaims;
 use crate::database::db_state::AppState;
 use crate::errors::AppError;
 use jsonwebtoken::{DecodingKey, Validation, decode};

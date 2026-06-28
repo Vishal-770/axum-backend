@@ -1,6 +1,6 @@
 use axum::{middleware, routing::{get, post, delete}, Router};
 use crate::database::db_state::AppState;
-use crate::middleware::auth::require_auth;
+use crate::v1::auth::middleware::require_auth;
 use super::handlers::{
     get_all::get_all_handler,
     get_current::get_current_handler,

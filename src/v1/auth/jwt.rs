@@ -1,4 +1,4 @@
-use crate::auth::claims::{AccessClaims, RefreshClaims};
+use super::claims::{AccessClaims, RefreshClaims};
 use chrono::{Duration, Utc};
 use jsonwebtoken::{EncodingKey, Header, encode};
 use uuid::Uuid;
@@ -21,14 +21,13 @@ pub fn create_access_token(
         &EncodingKey::from_secret(secret.as_bytes()),
     )
 }
+
 pub fn create_refresh_token(
     user_id: Uuid,
     secret: &str,
 ) -> Result<(String, Uuid, chrono::DateTime<chrono::Utc>), jsonwebtoken::errors::Error> {
     let now = Utc::now();
     let jti = Uuid::new_v4();
-    // Single source of truth: expiry is computed here and returned to the caller.
-    // The DB stores this exact value — no separate Duration::days(7) anywhere else.
     let expires_at = now + Duration::days(7);
     let token = encode(
         &Header::default(),
@@ -36,7 +35,7 @@ pub fn create_refresh_token(
             sub: user_id,
             iat: now.timestamp() as usize,
             exp: expires_at.timestamp() as usize,
-            jti: jti,
+            jti,
         },
         &EncodingKey::from_secret(secret.as_bytes()),
     )?;
