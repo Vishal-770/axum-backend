@@ -4,8 +4,8 @@ use crate::errors::AppError;
 use jsonwebtoken::{DecodingKey, Validation, decode};
 
 pub async fn logout(refresh_token: String, state: AppState) -> Result<(), AppError> {
-    let refresh_secret = std::env::var("JWT_REFRESH_SECRET")
-        .expect("JWT_REFRESH_SECRET must be set");
+    // Read refresh secret from AppState (no env mutex on each request)
+    let refresh_secret = &state.config.jwt_refresh_secret;
 
     // Verify signature but ignore expiration — we want to revoke the DB row
     // even if the token expired before the user explicitly logged out.

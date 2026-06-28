@@ -47,11 +47,9 @@ pub async fn login(
         return Err(AuthError::Unauthorized.into());
     }
 
-    // 4. Generate JWT tokens
-    let access_secret = std::env::var("JWT_ACCESS_SECRET")
-        .expect("JWT_ACCESS_SECRET must be set");
-    let refresh_secret = std::env::var("JWT_REFRESH_SECRET")
-        .expect("JWT_REFRESH_SECRET must be set");
+    // 4. Generate JWT tokens — read secrets from AppState (no env mutex on each request)
+    let access_secret = &state.config.jwt_access_secret;
+    let refresh_secret = &state.config.jwt_refresh_secret;
 
     // Each new login starts a fresh token family used for reuse detection
     let family_id = uuid::Uuid::new_v4();

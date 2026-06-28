@@ -190,7 +190,7 @@ pub async fn rate_limiter(
             jar.get("refresh_token")
                 .map(|cookie| cookie.value().to_string())
                 .and_then(|token| {
-                    let secret = std::env::var("JWT_REFRESH_SECRET").ok()?;
+                    let secret = &state.config.jwt_refresh_secret;
                     let token_data = jsonwebtoken::decode::<RefreshClaims>(
                         &token,
                         &jsonwebtoken::DecodingKey::from_secret(secret.as_bytes()),

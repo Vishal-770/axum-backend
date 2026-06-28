@@ -12,8 +12,8 @@ pub async fn refresh(
     state: AppState,
 ) -> Result<(String, String), AppError> {
     // 1. Verify JWT & extract jti / sub (user_id)
-    let refresh_secret = std::env::var("JWT_REFRESH_SECRET")
-        .expect("JWT_REFRESH_SECRET must be set");
+    // Read refresh secret from AppState (no env mutex on each request)
+    let refresh_secret = &state.config.jwt_refresh_secret;
 
     let token_data = decode::<RefreshClaims>(
         &refresh_token,
@@ -110,8 +110,8 @@ pub async fn refresh(
     .await?;
 
     // 10. Generate new access token and refresh token
-    let access_secret = std::env::var("JWT_ACCESS_SECRET")
-        .expect("JWT_ACCESS_SECRET must be set");
+    // Read access secret from AppState (no env mutex on each request)
+    let access_secret = &state.config.jwt_access_secret;
 
     let new_access_token =
         create_access_token(user_id, record.family_id, &access_secret).map_err(|_| AppError::InternalServer)?;

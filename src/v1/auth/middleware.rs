@@ -1,5 +1,5 @@
 use axum::{
-    extract::Request,
+    extract::{Request, State},
     middleware::Next,
     response::Response,
 };
@@ -10,6 +10,7 @@ use uuid::Uuid;
 use super::claims::AccessClaims;
 use super::errors::AuthError;
 use crate::errors::AppError;
+use crate::database::db_state::AppState;
 
 #[derive(Clone, Copy, Debug)]
 pub struct ClaimsExtension {
@@ -18,6 +19,7 @@ pub struct ClaimsExtension {
 }
 
 pub async fn require_auth(
+    State(state): State<AppState>,
     jar: CookieJar,
     mut req: Request,
     next: Next,
@@ -28,9 +30,8 @@ pub async fn require_auth(
         .map(|cookie| cookie.value().to_string())
         .ok_or_else(|| AppError::Auth(AuthError::Unauthorized))?;
 
-    // 2. Fetch the access token secret from environment
-    let access_secret = std::env::var("JWT_ACCESS_SECRET")
-        .expect("JWT_ACCESS_SECRET must be set");
+    // 2. Read the access token secret from AppState (cached at boot, no env mutex)
+    let access_secret = &state.config.jwt_access_secret;
 
     // 3. Decode and validate the access token
     let token_data = decode::<AccessClaims>(

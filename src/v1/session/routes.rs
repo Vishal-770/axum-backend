@@ -1,4 +1,4 @@
-use axum::{middleware, routing::{get, post, delete}, Router};
+use axum::{routing::{get, post, delete}, Router};
 use crate::database::db_state::AppState;
 use crate::v1::auth::middleware::require_auth;
 use crate::v1::auth::rate_limit::rate_limiter;
@@ -17,6 +17,6 @@ pub fn session_routes(state: AppState) -> Router<AppState> {
         .route("/current", get(get_current_handler))
         .route("/{family_id}", delete(revoke_handler))
         .route("/logout-all", post(logout_all_handler))
-        .route_layer(from_fn_with_state(state, rate_limiter))
-        .route_layer(middleware::from_fn(require_auth))
+        .route_layer(from_fn_with_state(state.clone(), rate_limiter))
+        .route_layer(from_fn_with_state(state, require_auth))
 }
