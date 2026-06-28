@@ -13,6 +13,9 @@ async fn root_handler() -> &'static str {
     "Welcome to the Axum Backend API!"
 }
 
+use crate::v1::auth::rate_limit::global_rate_limiter;
+use axum::middleware::from_fn_with_state;
+
 pub fn app_router(pool: PgPool, redis_conn: redis::aio::MultiplexedConnection) -> Router {
     let mail_service = MailService::new();
     let state = AppState { db: pool, mail_service, redis: redis_conn };
@@ -20,6 +23,7 @@ pub fn app_router(pool: PgPool, redis_conn: redis::aio::MultiplexedConnection) -
         .route("/", get(root_handler))
         .nest("/v1", v1_routes(state.clone()))
         .layer(TraceLayer::new_for_http())
+        .layer(from_fn_with_state(state.clone(), global_rate_limiter))
         .with_state(state)
 }
 
