@@ -5,3 +5,4 @@ pub mod refresh;
 pub mod reset_password;
 pub mod sign_up;
 pub mod verify_email;
+pub mod resend_otp;

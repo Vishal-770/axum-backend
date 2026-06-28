@@ -68,7 +68,7 @@ pub async fn sign_up(
                 println!("OTP issued for existing unverified user");
 
                 let rows_affected = sqlx::query!(
-                    "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW(), used_at = NULL WHERE email = $3",
+                    "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW(), used_at = NULL, resend_count = 0, last_sent_at = NOW() WHERE email = $3",
                     otp,
                     expires_at,
                     normalized_email
@@ -122,7 +122,7 @@ pub async fn sign_up(
             println!("OTP issued for new user");
 
             let rows_affected = sqlx::query!(
-                "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW(), used_at = NULL WHERE email = $3",
+                "UPDATE email_otp SET otp = $1, expires_at = $2, created_at = NOW(), used_at = NULL, resend_count = 0, last_sent_at = NOW() WHERE email = $3",
                 otp,
                 expires_at,
                 normalized_email

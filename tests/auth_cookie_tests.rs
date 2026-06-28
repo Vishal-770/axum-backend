@@ -572,3 +572,161 @@ async fn test_password_reset_flow() {
 
     assert_eq!(response.status(), StatusCode::OK);
 }
+
+#[tokio::test]
+async fn test_otp_resend_cooldown_and_limit_flow() {
+    let pool = setup_db().await;
+    let redis_conn = setup_redis().await;
+    let app = app_router(pool.clone(), redis_conn);
+
+    let test_uuid = Uuid::new_v4().to_string();
+    let email = format!("resend_{}@example.com", test_uuid);
+    let username = format!("user_{}", &test_uuid[0..8]);
+    let password = "Password123!";
+
+    // 1. Sign up the user
+    let signup_body = serde_json::json!({
+        "email": email,
+        "password": password,
+        "user_name": username
+    });
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/sign-up")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&signup_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // 2. Try to resend OTP immediately (should fail with 60s cooldown limit)
+    let resend_body = serde_json::json!({
+        "email": email
+    });
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/resend-otp")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&resend_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // 3. Bypass cooldown by manually updating the `last_sent_at` in the database to be 61 seconds ago
+    let past_time = chrono::Utc::now().naive_utc() - chrono::Duration::seconds(65);
+    sqlx::query!(
+        "UPDATE email_otp SET last_sent_at = $1 WHERE email = $2 AND used_at IS NULL",
+        past_time,
+        email
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    // 4. Try resend #1 (should succeed)
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/resend-otp")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&resend_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // 5. Bypass cooldown again to do resend #2 (should succeed)
+    sqlx::query!(
+        "UPDATE email_otp SET last_sent_at = $1 WHERE email = $2 AND used_at IS NULL",
+        past_time,
+        email
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/resend-otp")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&resend_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // 6. Bypass cooldown again to do resend #3 (should succeed)
+    sqlx::query!(
+        "UPDATE email_otp SET last_sent_at = $1 WHERE email = $2 AND used_at IS NULL",
+        past_time,
+        email
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/resend-otp")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&resend_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // 7. Bypass cooldown again to try resend #4 (should fail due to max resend limit)
+    sqlx::query!(
+        "UPDATE email_otp SET last_sent_at = $1 WHERE email = $2 AND used_at IS NULL",
+        past_time,
+        email
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/v1/auth/resend-otp")
+                .header(header::CONTENT_TYPE, "application/json")
+                .body(Body::from(serde_json::to_string(&resend_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // Verify response body states resend limit reached
+    let body_bytes = response.into_body().collect().await.unwrap().to_bytes();
+    let body_json: Value = serde_json::from_slice(&body_bytes).unwrap();
+    let error_msg = body_json.get("error").unwrap().as_str().unwrap();
+    assert!(error_msg.contains("Resend limit reached"));
+}

@@ -54,3 +54,9 @@ pub struct ResetPasswordDto {
     #[validate(length(min = 8, message = "Password must be at least 8 characters long"))]
     pub new_password: String,
 }
+
+#[derive(Debug, Deserialize, Validate)]
+pub struct ResendOtpDto {
+    #[validate(email(message = "Invalid email format"))]
+    pub email: String,
+}
