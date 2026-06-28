@@ -7,9 +7,9 @@ pub async fn verify_email(email: String, otp: String, state: AppState) -> Result
     // 1. Start a transaction
     let mut tx = state.db.begin().await?;
 
-    // 2. Fetch the latest OTP entry for this email
+    // 2. Fetch the latest unused OTP entry for this email
     let otp_record = sqlx::query!(
-        "SELECT otp, expires_at FROM email_otp WHERE email = $1 ORDER BY created_at DESC LIMIT 1",
+        "SELECT otp, expires_at FROM email_otp WHERE email = $1 AND used_at IS NULL ORDER BY created_at DESC LIMIT 1",
         normalized_email
     )
     .fetch_optional(&mut *tx)
@@ -44,10 +44,13 @@ pub async fn verify_email(email: String, otp: String, state: AppState) -> Result
         return Err(AuthError::Unauthorized.into());
     }
 
-    // 6. Delete OTP entry (or entries) for this email
-    sqlx::query!("DELETE FROM email_otp WHERE email = $1", normalized_email)
-        .execute(&mut *tx)
-        .await?;
+    // 6. Mark OTP entry as used instead of deleting it
+    sqlx::query!(
+        "UPDATE email_otp SET used_at = NOW() WHERE email = $1 AND used_at IS NULL",
+        normalized_email
+    )
+    .execute(&mut *tx)
+    .await?;
 
     tx.commit().await?;
 
