@@ -33,6 +33,7 @@ jsonwebtoken = { version = "10", features = ["rust_crypto"] }
 sha2 = "0.11.0"
 axum-extra = { version = "0.12.6", features = ["cookie"] }
 redis = { version = "0.27.0", features = ["tokio-comp"] }
+http-body-util = "0.1.3"
 
 [dev-dependencies]
 tower = { version = "0.5.3", features = ["util"] }

@@ -18,6 +18,8 @@ pub enum AuthError {
 
     #[error("Weak password")]
     WeakPassword,
+    #[error("Too many requests")]
+    TooManyRequests,
 }
 
 impl IntoResponse for AuthError {
@@ -30,6 +32,7 @@ impl IntoResponse for AuthError {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error".to_string()),
             AuthError::InvalidCode => (StatusCode::BAD_REQUEST, "Invalid Code".to_string()),
             AuthError::WeakPassword => (StatusCode::BAD_REQUEST, "Password must be at least 8 characters".to_string()),
+            AuthError::TooManyRequests => (StatusCode::TOO_MANY_REQUESTS, "Too many requests. Please try again later.".to_string()),
         };
 
         let body = Json(json!({

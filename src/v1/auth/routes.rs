@@ -11,7 +11,9 @@ use super::handlers::{
     verify_email::verify_email_handler,
 };
 
-pub fn auth_routes() -> Router<AppState> {
+use axum::middleware::from_fn_with_state;
+
+pub fn auth_routes(state: AppState) -> Router<AppState> {
     Router::new()
         .route("/login", post(login_handler))
         .route("/logout", post(logout_handler))
@@ -20,4 +22,5 @@ pub fn auth_routes() -> Router<AppState> {
         .route("/reset-password", post(reset_password_handler))
         .route("/verify-email", post(verify_email_handler))
         .route("/refresh", post(refresh_handler))
+        .route_layer(from_fn_with_state(state, super::rate_limit::rate_limiter))
 }

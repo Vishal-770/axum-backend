@@ -6,3 +6,4 @@ pub mod claims;
 pub mod jwt;
 pub mod middleware;
 pub mod errors;
+pub mod rate_limit;

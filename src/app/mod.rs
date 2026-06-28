@@ -18,7 +18,7 @@ pub fn app_router(pool: PgPool, redis_conn: redis::aio::MultiplexedConnection) -
     let state = AppState { db: pool, mail_service, redis: redis_conn };
     Router::new()
         .route("/", get(root_handler))
-        .nest("/v1", v1_routes())
+        .nest("/v1", v1_routes(state.clone()))
         .layer(TraceLayer::new_for_http())
         .with_state(state)
 }
