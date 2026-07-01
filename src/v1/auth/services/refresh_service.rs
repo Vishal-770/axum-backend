@@ -114,9 +114,9 @@ pub async fn refresh(
     let access_secret = &state.config.jwt_access_secret;
 
     let new_access_token =
-        create_access_token(user_id, record.family_id, &access_secret).map_err(|_| AppError::InternalServer)?;
+        create_access_token(user_id, record.family_id, access_secret).map_err(|_| AppError::InternalServer)?;
     let (new_refresh_token, new_jti, new_expires_at) =
-        create_refresh_token(user_id, &refresh_secret).map_err(|_| AppError::InternalServer)?;
+        create_refresh_token(user_id, refresh_secret).map_err(|_| AppError::InternalServer)?;
 
     // 11. Hash the new refresh token
     let mut hasher = Sha256::new();

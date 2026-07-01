@@ -24,3 +24,9 @@ impl MailService {
         Self { mailer }
     }
 }
+
+impl Default for MailService {
+    fn default() -> Self {
+        Self::new()
+    }
+}

@@ -55,9 +55,9 @@ pub async fn login(
     let family_id = uuid::Uuid::new_v4();
 
     let access_token =
-        create_access_token(user.id, family_id, &access_secret).map_err(|_| AppError::InternalServer)?;
+        create_access_token(user.id, family_id, access_secret).map_err(|_| AppError::InternalServer)?;
     let (refresh_token, jti, expires_at) =
-        create_refresh_token(user.id, &refresh_secret).map_err(|_| AppError::InternalServer)?;
+        create_refresh_token(user.id, refresh_secret).map_err(|_| AppError::InternalServer)?;
 
     // Calculate SHA-256 hash of the refresh token
     use sha2::{Digest, Sha256};
