@@ -1,11 +1,10 @@
-
 use axum::Router;
 use sqlx::PgPool;
 use tower_http::trace::TraceLayer;
 
+use crate::config::mail_config::MailService;
 use crate::database::db_state::AppState;
 use crate::v1::v1_routes;
-use crate::config::mail_config::MailService;
 
 // Simple root route mapping for health-check / entrypoint
 use axum::routing::get;
@@ -32,6 +31,3 @@ pub fn app_router(pool: PgPool, redis_conn: redis::aio::MultiplexedConnection) -
         .layer(from_fn_with_state(state.clone(), global_rate_limiter))
         .with_state(state)
 }
-
-
-
